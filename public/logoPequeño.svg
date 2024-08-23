@@ -1,0 +1,10 @@
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fondo azul -->
+  <rect width="200" height="200" fill="#0000FF"/>
+
+  <!-- Gota de agua -->
+  <path d="M100 50 C 80 70, 60 110, 100 150 C 140 110, 120 70, 100 50" fill="#00BFFF" stroke="#0080FF" stroke-width="5"/>
+
+  <!-- Efecto de brillo en la gota -->
+  <ellipse cx="90" cy="100" rx="15" ry="25" fill="white" opacity="0.6"/>
+</svg>
