@@ -18,7 +18,6 @@ export async function createAccount(formData) {
 export async function authenticateUser(formData) {
     try {
         const url = '/usuarios/Login';
-        console.log("Final URL:", api.defaults.baseURL + url); // Verifica que la URL final sea correcta
         const { data } = await api.post(url, formData);
         localStorage.setItem('AUTH_TOKEN', data.token);
         return data;
@@ -60,7 +59,6 @@ export async function getUserById(id) {
                 Authorization: `Bearer ${localStorage.getItem('AUTH_TOKEN')}`,
             },
         });
-        console.log('AAAAAAAAAAAAA',data);
         return data;
     } catch (error) {
         if (isAxiosError(error) && error.response) {

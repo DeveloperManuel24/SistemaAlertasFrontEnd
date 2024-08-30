@@ -5,7 +5,7 @@ import ErrorMessage from "../../components/ErrorMessage";
 import { authenticateUser } from "../../../api/AuthAPI"; 
 import Swal from "sweetalert2";
 
-export default function LoginView() {
+export default function Login() {
 
   const initialValues = {
     email: '',
@@ -39,6 +39,7 @@ export default function LoginView() {
       });
     }
   });
+    
 
   const handleLogin = (formData) => {
     // Ajustar el formData para que coincida con lo que espera el backend

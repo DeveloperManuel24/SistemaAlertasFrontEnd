@@ -12,7 +12,7 @@ import ManejoDeSensor from './views/sistema/ManejoDeSensor';
 import FormularioSensor from './components/FormularioSensor';
 import VerSensor from './views/sistema/VerSensor';
 import AuthLayout from './layout/AuthLayout';
-import LoginView from "./views/usuarios/Login";
+import Login from "./views/usuarios/Login";
 import ProtectedRoute from './components/ProtectedRoute';
 import AccesoDenegado from './components/AccesoDenegado';
 
@@ -30,7 +30,7 @@ function App() {
         <Routes>
           {/* Rutas públicas */}
           <Route element={<AuthLayout />}>
-            <Route path="/auth/login" element={<LoginView />} />
+            <Route path="/auth/login" element={<Login />} />
             {/* Otras rutas de autenticación */}
           </Route>
 
