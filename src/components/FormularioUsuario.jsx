@@ -119,7 +119,7 @@ const FormularioUsuario = () => {
         <div className="flex justify-end">
           <button
             type="submit"
-            className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded ${!isValid && !id ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded ${!isValid  ? 'opacity-50 cursor-not-allowed' : ''}`}
             disabled={!isValid && !id} // Deshabilitar el botón solo si el formulario no es válido y no estamos en modo edición
           >
             {id ? 'Actualizar' : 'Crear'}
