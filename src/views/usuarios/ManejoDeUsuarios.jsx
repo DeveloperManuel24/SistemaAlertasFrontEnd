@@ -15,7 +15,6 @@ export default function ManejoDeUsuarios() {
     queryFn: getUsers,
   });
 
-  console.log('Usuarios obtenidos de la API:', users);
 
   if (isLoading) return 'Cargando...';
 

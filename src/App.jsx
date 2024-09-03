@@ -9,7 +9,7 @@ import ManejoDeUsuarios from './views/usuarios/ManejoDeUsuarios';
 import FormularioUsuario from './components/FormularioUsuario';
 import VerUsuario from './views/usuarios/VerUsuario';
 import ManejoDeSensor from './views/sistema/ManejoDeSensor';
-import FormularioSensor from './components/FormularioSensor';
+import FormularioSensor from './components/FormularioSensor'
 import VerSensor from './views/sistema/VerSensor';
 import AuthLayout from './layout/AuthLayout';
 import Login from "./views/usuarios/Login";

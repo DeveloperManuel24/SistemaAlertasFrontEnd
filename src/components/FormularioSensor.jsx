@@ -1,27 +1,61 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createSensor, updateSensor, getSensorById } from '../../api/SensorAPI';
 
-const FormularioSensor = ({ onSave }) => {
+const FormularioSensor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
   const [formData, setFormData] = useState({
-    type: '',
+    nombreSensor: '',
     location: '',
     status: '',
   });
 
-  useEffect(() => {
-    if (id) {
-      // Simular la carga de datos si el ID está presente (modo edición)
-      const sensorData = {
-        id,
-        type: 'Grave', // Aquí puedes cambiar según los datos que cargues
-        location: 'Sector 1',
-        status: 'Activo',
-      };
-      setFormData(sensorData);
-    }
-  }, [id]);
+  // Cargar los datos del sensor si el id está presente
+  const { data: sensorData, isLoading: isLoadingSensor } = useQuery({
+    queryKey: ['sensor', id],
+    queryFn: () => getSensorById(id),
+    enabled: !!id, // Solo ejecuta la consulta si hay un ID presente
+    onSuccess: (data) => {
+      // Verifica si los datos vienen correctamente y se asignan a formData
+      console.log("Datos del sensor:", data);
+      setFormData({
+        nombreSensor: data.nombreSensor || '',
+        location: data.location || '',
+        status: data.status || '',
+      });
+    },
+    onError: (error) => {
+      console.error('Error al cargar el sensor:', error.message);
+    },
+  });
+
+  // Mutación para crear un nuevo sensor
+  const createMutation = useMutation({
+    mutationFn: createSensor,
+    onSuccess: () => {
+      queryClient.invalidateQueries(['sensors']); // Refrescar los datos de sensores
+      navigate('/sensores'); // Redirigir al listado de sensores
+    },
+    onError: (error) => {
+      console.error('Error al crear el sensor:', error.message);
+    },
+  });
+
+  // Mutación para actualizar un sensor existente
+  const updateMutation = useMutation({
+    mutationFn: (updatedData) => updateSensor(id, updatedData),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['sensors']); // Refrescar los datos de sensores
+      navigate('/sensores'); // Redirigir al listado de sensores
+    },
+    onError: (error) => {
+      console.error('Error al actualizar el sensor:', error.message);
+    },
+  });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -30,28 +64,41 @@ const FormularioSensor = ({ onSave }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(formData);
-    navigate('/sensores');
+    if (id) {
+      updateMutation.mutate(formData); // Actualizar sensor
+    } else {
+      createMutation.mutate(formData); // Crear sensor
+    }
   };
 
+  useEffect(() => {
+    if (sensorData) {
+      setFormData({
+        nombreSensor: sensorData.nombreSensor || '',
+        location: sensorData.location || '',
+        status: sensorData.status || '',
+      });
+    }
+  }, [sensorData]);
+
+  if (isLoadingSensor) {
+    return <p>Cargando datos del sensor...</p>;
+  }
+
   return (
+    <>
     <form onSubmit={handleSubmit} className="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-4">{id ? 'Editar Sensor' : 'Crear Sensor'}</h2>
       <div className="mb-4">
-        <label className="block text-gray-700">Tipo de Alerta</label>
-        <select
-          name="type"
-          value={formData.type}
+        <label className="block text-gray-700">Nombre del Sensor</label>
+        <input
+          type="text"
+          name="nombreSensor"
+          value={formData.nombreSensor}
           onChange={handleChange}
           className="w-full p-2 border border-gray-300 rounded"
           required
-        >
-          <option value="">Selecciona un tipo</option>
-          <option value="Grave">Grave</option>
-          <option value="Moderado">Moderado</option>
-          <option value="Leve">Leve</option>
-          <option value="Normal">Normal</option>
-        </select>
+        />
       </div>
       <div className="mb-4">
         <label className="block text-gray-700">Localidad</label>
@@ -87,6 +134,14 @@ const FormularioSensor = ({ onSave }) => {
         </button>
       </div>
     </form>
+        
+    <button
+        onClick={() => navigate('/sensores')}
+        className="bg-blue-500 hover:bg-blue-700 mt-8 text-white font-bold py-2 px-4 rounded mx-auto block"
+      >
+        Volver a la lista de Sensores
+      </button>
+    </>
   );
 };
 

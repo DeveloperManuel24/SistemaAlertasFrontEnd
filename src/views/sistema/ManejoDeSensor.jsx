@@ -1,18 +1,36 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useTable, useGlobalFilter } from 'react-table';
 import { FaEdit, FaTrash, FaEye, FaPlus } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { getSensors, deleteSensor } from '../../../api/SensorAPI';
 
 const ManejoDeSensor = () => {
   const navigate = useNavigate();
-  const [data, setData] = useState([
-    { id: 1, type: 'Grave', location: 'Sector 1', status: 'Activo' },
-    { id: 2, type: 'Moderado', location: 'Sector 2', status: 'Inactivo' },
-    // Añade más sensores aquí...
-  ]);
+  const queryClient = useQueryClient();
 
-  const handleDelete = (id) => {
+  // Fetching sensors data using useQuery
+  const { data: sensors, isLoading, error } = useQuery({
+    queryKey: ['sensors'],
+    queryFn: getSensors,
+  });
+  console.log("API Data:", sensors);
+
+  // Mutation for deleting a sensor
+  const deleteMutation = useMutation({
+    mutationFn: deleteSensor,
+    onSuccess: () => {
+      queryClient.invalidateQueries(['sensors']); // Refrescar los datos después de eliminar
+      Swal.fire('Eliminado!', 'El sensor ha sido eliminado.', 'success');
+    },
+    onError: (error) => {
+      Swal.fire('Error', error.message, 'error');
+    },
+  });
+
+  // Handle delete sensor
+  const handleDelete = async (sensorId) => {
     Swal.fire({
       title: '¿Estás seguro?',
       text: "¡No podrás revertir esto!",
@@ -23,15 +41,14 @@ const ManejoDeSensor = () => {
       confirmButtonText: 'Sí, eliminarlo!',
     }).then((result) => {
       if (result.isConfirmed) {
-        setData(data.filter((sensor) => sensor.id !== id));
-        Swal.fire('Eliminado!', 'El sensor ha sido eliminado.', 'success');
+        deleteMutation.mutate(sensorId);
       }
     });
   };
 
+  // Definir las columnas
   const columns = useMemo(() => [
-    { Header: 'NO.', accessor: 'id' },
-    { Header: 'Tipo de Alerta', accessor: 'type' },
+    { Header: 'Nombre Sensor', accessor: 'nombreSensor' },
     { Header: 'Localidad', accessor: 'location' },
     { Header: 'Estatus', accessor: 'status' },
     {
@@ -40,28 +57,29 @@ const ManejoDeSensor = () => {
       Cell: ({ row }) => (
         <div className="flex space-x-2">
           <button
-            onClick={() => navigate(`/sensores/view/${row.original.id}`)}
+            onClick={() => navigate(`/sensores/view/${row.original.sensorId}`)}
             className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center"
           >
-            <FaEye className="mr-1" /> View
+            <FaEye className="mr-1" /> Ver Lecturas
           </button>
           <button
-            onClick={() => navigate(`/sensores/edit/${row.original.id}`)}
+            onClick={() => navigate(`/sensores/edit/${row.original.sensorId}`)}
             className="bg-orange-500 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded flex items-center"
           >
-            <FaEdit className="mr-1" /> Edit
+            <FaEdit className="mr-1" /> Editar
           </button>
           <button
-            onClick={() => handleDelete(row.original.id)}
+            onClick={() => handleDelete(row.original.sensorId)}
             className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded flex items-center"
           >
-            <FaTrash className="mr-1" /> Delete
+            <FaTrash className="mr-1" /> Eliminar
           </button>
         </div>
       ),
     },
-  ], [data, navigate]);
+  ], [navigate]);
 
+  // Inicializar la tabla con los datos obtenidos
   const {
     getTableProps,
     getTableBodyProps,
@@ -70,9 +88,13 @@ const ManejoDeSensor = () => {
     prepareRow,
     state,
     setGlobalFilter,
-  } = useTable({ columns, data }, useGlobalFilter);
+  } = useTable({ columns, data: sensors || [] }, useGlobalFilter);
 
   const { globalFilter } = state;
+
+  if (error) {
+    return <p>Error al cargar los sensores: {error.message}</p>;
+  }
 
   return (
     <div className="p-5">
@@ -92,33 +114,39 @@ const ManejoDeSensor = () => {
         </button>
       </div>
       <div className="overflow-x-auto">
-        <table {...getTableProps()} className="min-w-full bg-white border border-gray-200">
-          <thead>
-            {headerGroups.map((headerGroup) => (
-              <tr {...headerGroup.getHeaderGroupProps()} key={headerGroup.id} className="bg-gray-800 text-white">
-                {headerGroup.headers.map((column) => (
-                  <th {...column.getHeaderProps()} key={column.id} className="py-3 px-6 text-left">
-                    {column.render('Header')}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody {...getTableBodyProps()}>
-            {rows.map((row) => {
-              prepareRow(row);
-              return (
-                <tr {...row.getRowProps()} key={row.id} className="border-b">
-                  {row.cells.map((cell) => (
-                    <td {...cell.getCellProps()} key={cell.column.id} className="py-3 px-6">
-                      {cell.render('Cell')}
-                    </td>
+        {isLoading ? (
+          <p>Cargando sensores...</p>
+        ) : sensors && sensors.length > 0 ? (
+          <table {...getTableProps()} className="min-w-full bg-white border border-gray-200">
+            <thead>
+              {headerGroups.map((headerGroup) => (
+                <tr {...headerGroup.getHeaderGroupProps()} key={headerGroup.id} className="bg-gray-800 text-white">
+                  {headerGroup.headers.map((column) => (
+                    <th {...column.getHeaderProps()} key={column.id} className="py-3 px-6 text-left">
+                      {column.render('Header')}
+                    </th>
                   ))}
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              ))}
+            </thead>
+            <tbody {...getTableBodyProps()}>
+              {rows.map((row) => {
+                prepareRow(row);
+                return (
+                  <tr {...row.getRowProps()} key={row.original.sensorId} className="border-b">
+                    {row.cells.map((cell) => (
+                      <td {...cell.getCellProps()} key={cell.column.id} className="py-3 px-6">
+                        {cell.render('Cell')}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        ) : (
+          <h1 className="mt-9 text-center text-2xl font-bold mb-5">Sin sensores registrados</h1>
+        )}
       </div>
     </div>
   );
