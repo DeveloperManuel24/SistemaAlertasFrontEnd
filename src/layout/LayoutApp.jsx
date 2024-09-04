@@ -51,7 +51,7 @@ const LayoutApp = () => {
               className={`mt-9 ${location.pathname === '/' ? 'text-blue-300' : 'text-white'} text-xl block mt-6 hover:text-blue-300 flex items-center`} 
               to="/"
             >
-              <FaHome className="mr-2" /> Resumen de Datos
+              <FaHome className="mr-2" /> Gráfica de Sensores
             </Link>
             <Link 
               className={`mt-9 ${location.pathname === '/PantallaMonitoreo' ? 'text-blue-300' : 'text-white'} text-xl block mt-6 hover:text-blue-300 flex items-center`} 

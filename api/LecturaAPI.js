@@ -1,10 +1,18 @@
 import api from "../src/config/axios";
 import { isAxiosError } from "axios";
 
+// Obtener el token almacenado en localStorage
+const getToken = () => localStorage.getItem('AUTH_TOKEN');
+
 // Crear una lectura
 export async function createReading(formData) {
     try {
-        const { data } = await api.post('/lecturas/lecturas', formData);
+        const token = getToken();
+        const { data } = await api.post('/lecturas/lecturas', formData, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
         return data;
     } catch (error) {
         if (isAxiosError(error) && error.response) {
@@ -18,7 +26,12 @@ export async function createReading(formData) {
 // Obtener todas las lecturas
 export async function getReadings() {
     try {
-        const { data } = await api.get('/lecturas/lecturas');
+        const token = getToken();
+        const { data } = await api.get('/lecturas/lecturas', {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
         return data;
     } catch (error) {
         if (isAxiosError(error) && error.response) {
@@ -32,7 +45,12 @@ export async function getReadings() {
 // Obtener una lectura por ID
 export async function getReadingById(id) {
     try {
-        const { data } = await api.get(`/lecturas/lecturas/${id}`);
+        const token = getToken();
+        const { data } = await api.get(`/lecturas/lecturas/${id}`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
         return data;
     } catch (error) {
         if (isAxiosError(error) && error.response) {

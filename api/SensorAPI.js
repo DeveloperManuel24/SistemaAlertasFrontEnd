@@ -23,7 +23,12 @@ export async function createSensor(formData) {
 // Obtener todos los sensores
 export async function getSensors() {
     try {
-        const { data } = await api.get('/api/sensores');
+        const token = localStorage.getItem('AUTH_TOKEN');
+        const { data } = await api.get('/api/sensores', {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
         return data;
     } catch (error) {
         if (isAxiosError(error) && error.response) {
@@ -37,7 +42,12 @@ export async function getSensors() {
 // Obtener un sensor por ID
 export async function getSensorById(id) {
     try {
-        const { data } = await api.get(`/api/sensores/${id}`);
+        const token = localStorage.getItem('AUTH_TOKEN');
+        const { data } = await api.get(`/api/sensores/${id}`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
         return data;
     } catch (error) {
         if (isAxiosError(error) && error.response) {

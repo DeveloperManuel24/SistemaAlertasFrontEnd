@@ -1,23 +1,29 @@
 import React, { useMemo } from 'react';
 import { useTable, usePagination, useGlobalFilter } from 'react-table';
+import { useQuery } from '@tanstack/react-query';
+import { getReadings } from '../../../api/LecturaAPI'; // Asegúrate de usar el endpoint correcto para las lecturas
 
 const PantallaMonitoreo = () => {
-  const data = useMemo(() => [
-    { no: 1, fecha: '22/05/2024', hora: '01:00', ubicacion: 'Distribuidor de agua - El paraíso', turbidez: 0.5, ph: 7.2, orp: 250, temperatura: 25, estado: 'Normal' },
-    { no: 2, fecha: '22/05/2024', hora: '13:00', ubicacion: 'Distribuidor de lodo - El paraíso', turbidez: 1.0, ph: 7.4, orp: 300, temperatura: 24, estado: 'Normal' },
-    // Añade más datos aquí...
-  ], []);
+  // Fetching readings data using useQuery
+  const { data: readingsData, isLoading, error } = useQuery({
+    queryKey: ['readings'],
+    queryFn: getReadings, // Obtener los datos desde la API
+  });
+console.log(readingsData)
+  // Prevenir errores si no hay lecturas aún
+  const data = readingsData || [];
 
+  // Definir las columnas de la tabla
   const columns = useMemo(() => [
-    { Header: 'NO.', accessor: 'no' },
-    { Header: 'Fecha', accessor: 'fecha' },
-    { Header: 'Hora', accessor: 'hora' },
-    { Header: 'Ubicación', accessor: 'ubicacion' },
-    { Header: 'Sensor de Turbidez (NTU)', accessor: 'turbidez' },
-    { Header: 'Sensor de pH', accessor: 'ph' },
-    { Header: 'Sensor de ORP (mV)', accessor: 'orp' },
-    { Header: 'Sensor de Temperatura (°C)', accessor: 'temperatura' },
-    { Header: 'Estado', accessor: 'estado' },
+    { Header: 'NO.', accessor: 'readId' }, // Aquí uso 'readId' como el ID único
+    { Header: 'Fecha', accessor: 'registerDate' },
+    { Header: 'Hora', accessor: 'registerTime' }, // Si tienes una hora separada, ajusta el accessor
+    { Header: 'Ubicación', accessor: 'location' }, // Asegúrate de que exista este campo en tus datos
+    { Header: 'Sensor de Turbidez (NTU)', accessor: 'turbidez_parameter' },
+    { Header: 'Sensor de pH', accessor: 'ph_parameter' },
+    { Header: 'Sensor de ORP (mV)', accessor: 'orp_parameter' },
+    { Header: 'Sensor de Temperatura (°C)', accessor: 'temperature' }, // Asegúrate de tener la temperatura en los datos
+    { Header: 'Estado', accessor: 'estado' }, // Asegúrate de que 'estado' sea parte de tus datos o puedes omitirlo
   ], []);
 
   const {
@@ -25,7 +31,7 @@ const PantallaMonitoreo = () => {
     getTableBodyProps,
     headerGroups,
     prepareRow,
-    page, // Instead of using rows, we'll use page
+    page, // Instead of using rows, we'll use page for pagination
     canPreviousPage,
     canNextPage,
     pageOptions,
@@ -35,18 +41,26 @@ const PantallaMonitoreo = () => {
     previousPage,
     setPageSize,
     state,
-    setGlobalFilter, // Añadimos esto para la búsqueda global
+    setGlobalFilter,
   } = useTable(
     {
       columns,
-      data,
-      initialState: { pageIndex: 0 }, // Start on the first page
+      data, // Usar los datos obtenidos de la API
+      initialState: { pageIndex: 0 },
     },
-    useGlobalFilter, // Añadimos el filtro global
+    useGlobalFilter,
     usePagination
   );
 
-  const { pageIndex, pageSize, globalFilter } = state; // Añadimos globalFilter al estado
+  const { pageIndex, pageSize, globalFilter } = state;
+
+  if (isLoading) {
+    return <p>Cargando lecturas...</p>;
+  }
+
+  if (error) {
+    return <p>Error al cargar las lecturas: {error.message}</p>;
+  }
 
   return (
     <div className="p-5">
@@ -88,7 +102,6 @@ const PantallaMonitoreo = () => {
           </tbody>
         </table>
       </div>
-      {/* Paginación */}
       <div className="mt-4 flex justify-between items-center">
         <div className="flex space-x-2">
           <button
