@@ -62,11 +62,18 @@ const PantallaAlertas = () => {
   const downloadPDF = () => {
     const doc = new jsPDF();
 
-    // Encabezado
-    doc.text('Reporte de Alertas', 14, 16);
+    // Encabezado centrado con estilo
+    doc.setFontSize(18);
+    doc.text('Reporte de Alertas', doc.internal.pageSize.getWidth() / 2, 16, null, null, 'center');
 
-    // Generar la tabla automáticamente
+    // Espacio antes de la tabla
+    doc.setFontSize(12);
+    doc.text('Generado el ' + new Date().toLocaleString('es-ES'), 14, 25);
+
+    // Generar la tabla con un estilo mejorado
     doc.autoTable({
+      startY: 30, // Esto asegura que la tabla comience un poco más abajo del título
+      headStyles: { fillColor: [22, 160, 133] }, // Cambiar color del encabezado de la tabla
       head: [['NO', 'Nombre de Alerta', 'Id del sensor', 'Fecha', 'Nivel', 'Descripción']],
       body: rows.map((row) => [
         row.index + 1,
@@ -76,6 +83,7 @@ const PantallaAlertas = () => {
         row.original.level,
         row.original.description,
       ]),
+      styles: { cellPadding: 3, fontSize: 10 }, // Ajustar el padding y tamaño de la fuente
     });
 
     doc.save('reporte-alertas.pdf');
