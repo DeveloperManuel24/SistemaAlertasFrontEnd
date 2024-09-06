@@ -1,55 +1,135 @@
 import React, { useMemo } from 'react';
 import { useTable, useGlobalFilter } from 'react-table';
-import { FaExclamationTriangle } from 'react-icons/fa';
+import { FaExclamationTriangle } from 'react-icons/fa';  // Ícono para las alertas
+import { useQuery } from '@tanstack/react-query';
+import { getAlerts } from '../../../api/AlertaAPI';  // Ruta de tu API para obtener alertas
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
-const Alertas = () => {
-  const data = useMemo(() => [
-    { no: 1, nombre: 'Alerta niveles de pH demasiado elevados.', parametro: '5.2', fecha: '25/05/2024', hora: '13:00' },
-    { no: 2, nombre: 'Alerta niveles de ORP demasiado bajos.', parametro: '50', fecha: '25/05/2024', hora: '13:00' },
-    // Añade más datos aquí...
-  ], []);
+const PantallaAlertas = () => {
+  // Usar `useQuery` para obtener los datos de las alertas
+  const { data: alertas, isLoading, error } = useQuery({
+    queryKey: ['alertas'],
+    queryFn: getAlerts,  // Usamos la función que me pasaste para obtener todas las alertas
+  });
 
+  // Función para aplicar color según el nivel de alerta
+  const getIconColor = (level) => {
+    switch (level.toLowerCase()) {
+      case 'crítico':
+        return 'text-red-600'; // Rojo para "Crítico"
+      case 'advertencia':
+        return 'text-yellow-500'; // Amarillo para "Advertencia"
+      case 'alerta':
+      default:
+        return 'text-orange-500'; // Naranja para "Alerta"
+    }
+  };
+
+  // Definir las columnas de la tabla
   const columns = useMemo(() => [
     {
-      Header: '',
-      accessor: 'icono',
-      Cell: () => <FaExclamationTriangle className="text-red-500" />,
+      Header: 'NO.',
+      accessor: 'id', // Campo adecuado para mostrar el ID o número de alerta
+      Cell: ({ row }) => (
+        <div className="flex items-center">
+          <FaExclamationTriangle className={`${getIconColor(row.original.level)} mr-2`} />
+        </div>
+      ),
     },
-    { Header: 'NO.', accessor: 'no' },
-    { Header: 'Nombre de Alerta', accessor: 'nombre' },
-    { Header: 'Parámetro', accessor: 'parametro' },
-    { Header: 'Fecha', accessor: 'fecha' },
-    { Header: 'Hora', accessor: 'hora' },
+    { Header: 'Nombre de Alerta', accessor: 'type' }, // Ajustar según el nombre de tu campo
+    { Header: 'Id del sensor', accessor: 'sensorId', Cell: ({ value }) => <div className="text-center">{value}</div> },
+    { Header: 'Fecha y Hora', accessor: 'registerDate', Cell: ({ value }) => new Date(value).toLocaleString('es-ES') },
+    { Header: 'Nivel', accessor: 'level' },
+    { Header: 'Descripción', accessor: 'description' },
   ], []);
 
+  // Inicializar la tabla con los datos obtenidos
   const {
     getTableProps,
     getTableBodyProps,
     headerGroups,
-    prepareRow,
     rows,
+    prepareRow,
     state,
-    setGlobalFilter, // Añadimos esto para la búsqueda global
-  } = useTable(
-    {
-      columns,
-      data,
-    },
-    useGlobalFilter // Añadimos el filtro global
-  );
+    setGlobalFilter,
+  } = useTable({ columns, data: alertas || [] }, useGlobalFilter);
 
   const { globalFilter } = state;
+
+  // Función para descargar el reporte en PDF
+  const downloadPDF = () => {
+    const doc = new jsPDF();
+
+    // Encabezado
+    doc.text('Reporte de Alertas', 14, 16);
+
+    // Generar la tabla automáticamente
+    doc.autoTable({
+      head: [['NO', 'Nombre de Alerta', 'Id del sensor', 'Fecha', 'Nivel', 'Descripción']],
+      body: rows.map((row) => [
+        row.index + 1,
+        row.original.type,
+        row.original.sensorId,
+        new Date(row.original.registerDate).toLocaleString('es-ES'),
+        row.original.level,
+        row.original.description,
+      ]),
+    });
+
+    doc.save('reporte-alertas.pdf');
+  };
+
+  // Función para descargar el reporte en Excel
+  const downloadExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(rows.map((row) => ({
+      NO: row.index + 1,
+      'Nombre de Alerta': row.original.type,
+      'Id del sensor': row.original.sensorId,
+      Fecha: new Date(row.original.registerDate).toLocaleString('es-ES'),
+      Nivel: row.original.level,
+      Descripción: row.original.description,
+    })));
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'ReporteAlertas');
+    XLSX.writeFile(workbook, 'reporte-alertas.xlsx');
+  };
+
+  // Manejar errores y estado de carga
+  if (isLoading) {
+    return <p>Cargando alertas...</p>;
+  }
+
+  if (error) {
+    return <p>Error al cargar las alertas: {error.message}</p>;
+  }
 
   return (
     <div className="p-5">
       <h1 className="text-3xl font-bold mb-5">Pantalla de Alertas</h1>
-      <div className="mb-4">
+      <div className="flex justify-between mb-4">
         <input
           value={globalFilter || ''}
           onChange={(e) => setGlobalFilter(e.target.value)}
-          placeholder="Buscar..."
+          placeholder="Buscar alerta..."
           className="p-2 border border-gray-300 rounded"
         />
+        <div className="flex space-x-2">
+          <button
+            onClick={downloadPDF}
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Descargar PDF
+          </button>
+          <button
+            onClick={downloadExcel}
+            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Descargar Excel
+          </button>
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table {...getTableProps()} className="min-w-full bg-white border border-gray-200">
@@ -68,7 +148,7 @@ const Alertas = () => {
             {rows.map((row) => {
               prepareRow(row);
               return (
-                <tr {...row.getRowProps()} key={row.id} className="border-b">
+                <tr {...row.getRowProps()} key={row.original.alertId || row.index} className="border-b">
                   {row.cells.map((cell) => (
                     <td {...cell.getCellProps()} key={cell.column.id} className="py-3 px-6">
                       {cell.render('Cell')}
@@ -84,4 +164,4 @@ const Alertas = () => {
   );
 };
 
-export default Alertas;
+export default PantallaAlertas;

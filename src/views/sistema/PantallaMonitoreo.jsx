@@ -2,6 +2,9 @@ import React, { useMemo } from 'react';
 import { useTable, usePagination, useGlobalFilter } from 'react-table';
 import { useQuery } from '@tanstack/react-query';
 import { getReadings } from '../../../api/LecturaAPI'; // Asegúrate de usar el endpoint correcto para las lecturas
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 const PantallaMonitoreo = () => {
   // Fetching readings data using useQuery
@@ -9,21 +12,20 @@ const PantallaMonitoreo = () => {
     queryKey: ['readings'],
     queryFn: getReadings, // Obtener los datos desde la API
   });
-console.log(readingsData)
+
+  console.log(readingsData);
+  
   // Prevenir errores si no hay lecturas aún
   const data = readingsData || [];
 
   // Definir las columnas de la tabla
   const columns = useMemo(() => [
-    { Header: 'NO.', accessor: 'readId' }, // Aquí uso 'readId' como el ID único
-    { Header: 'Fecha', accessor: 'registerDate' },
-    { Header: 'Hora', accessor: 'registerTime' }, // Si tienes una hora separada, ajusta el accessor
-    { Header: 'Ubicación', accessor: 'location' }, // Asegúrate de que exista este campo en tus datos
-    { Header: 'Sensor de Turbidez (NTU)', accessor: 'turbidez_parameter' },
-    { Header: 'Sensor de pH', accessor: 'ph_parameter' },
-    { Header: 'Sensor de ORP (mV)', accessor: 'orp_parameter' },
-    { Header: 'Sensor de Temperatura (°C)', accessor: 'temperature' }, // Asegúrate de tener la temperatura en los datos
-    { Header: 'Estado', accessor: 'estado' }, // Asegúrate de que 'estado' sea parte de tus datos o puedes omitirlo
+    { Header: 'NO.', accessor: 'readId', Cell: ({ value }) => <div className="text-center">{value}</div> }, 
+    { Header: 'Fecha y Hora', accessor: 'registerDate', Cell: ({ value }) => <div className="text-center">{new Date(value).toLocaleString('es-ES')}</div> },
+    { Header: 'Id del sensor', accessor: 'sensorId', Cell: ({ value }) => <div className="text-center">{value}</div> },
+    { Header: 'Sensor de Turbidez (NTU)', accessor: 'turbidez_parameter', Cell: ({ value }) => <div className="text-center">{value}</div> },
+    { Header: 'Sensor de pH', accessor: 'ph_parameter', Cell: ({ value }) => <div className="text-center">{value}</div> },
+    { Header: 'Sensor de ORP (mV)', accessor: 'orp_parameter', Cell: ({ value }) => <div className="text-center">{value}</div> },
   ], []);
 
   const {
@@ -54,6 +56,48 @@ console.log(readingsData)
 
   const { pageIndex, pageSize, globalFilter } = state;
 
+  // Función para descargar el reporte en PDF
+  const downloadPDF = () => {
+    const doc = new jsPDF();
+
+    // Encabezado
+    doc.setFontSize(18);
+    doc.text('Reporte de Lecturas', 14, 16);
+    doc.setFontSize(12);
+
+    // Generar la tabla automáticamente
+    doc.autoTable({
+      startY: 22,
+      head: [['NO', 'Fecha y Hora', 'Id del Sensor', 'Turbidez (NTU)', 'pH', 'ORP (mV)']],
+      body: page.map((row) => [
+        row.index + 1,
+        new Date(row.original.registerDate).toLocaleString('es-ES'),
+        row.original.sensorId,
+        row.original.turbidez_parameter,
+        row.original.ph_parameter,
+        row.original.orp_parameter,
+      ]),
+    });
+
+    doc.save('reporte-lecturas.pdf');
+  };
+
+  // Función para descargar el reporte en Excel
+  const downloadExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(page.map((row) => ({
+      NO: row.index + 1,
+      Fecha: new Date(row.original.registerDate).toLocaleString('es-ES'),
+      'Id del Sensor': row.original.sensorId,
+      'Turbidez (NTU)': row.original.turbidez_parameter,
+      'pH': row.original.ph_parameter,
+      'ORP (mV)': row.original.orp_parameter,
+    })));
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'ReporteLecturas');
+    XLSX.writeFile(workbook, 'reporte-lecturas.xlsx');
+  };
+
   if (isLoading) {
     return <p>Cargando lecturas...</p>;
   }
@@ -64,14 +108,28 @@ console.log(readingsData)
 
   return (
     <div className="p-5">
-      <h1 className="text-3xl font-bold mb-5">Pantalla Resumen de Datos</h1>
-      <div className="mb-4">
+      <h1 className="text-4xl font-bold mb-6 ">Monitoreo de Lecturas</h1>
+      <div className="flex justify-between mb-4">
         <input
           value={globalFilter || ''}
           onChange={(e) => setGlobalFilter(e.target.value)}
           placeholder="Buscar..."
           className="p-2 border border-gray-300 rounded"
         />
+        <div className="flex space-x-2">
+          <button
+            onClick={downloadPDF}
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Descargar PDF
+          </button>
+          <button
+            onClick={downloadExcel}
+            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Descargar Excel
+          </button>
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table {...getTableProps()} className="min-w-full bg-white border border-gray-200">
@@ -79,7 +137,7 @@ console.log(readingsData)
             {headerGroups.map((headerGroup) => (
               <tr {...headerGroup.getHeaderGroupProps()} key={headerGroup.id} className="bg-gray-800 text-white">
                 {headerGroup.headers.map((column) => (
-                  <th {...column.getHeaderProps()} key={column.id} className="py-3 px-6 text-left">
+                  <th {...column.getHeaderProps()} key={column.id} className="py-3 px-6 text-center">
                     {column.render('Header')}
                   </th>
                 ))}
@@ -90,9 +148,9 @@ console.log(readingsData)
             {page.map((row) => {
               prepareRow(row);
               return (
-                <tr {...row.getRowProps()} key={row.id} className="border-b">
+                <tr {...row.getRowProps()} key={row.original.readId || row.index} className="border-b">
                   {row.cells.map((cell) => (
-                    <td {...cell.getCellProps()} key={cell.column.id} className="py-3 px-6">
+                    <td {...cell.getCellProps()} key={cell.column.id} className="py-3 px-6 text-center">
                       {cell.render('Cell')}
                     </td>
                   ))}
