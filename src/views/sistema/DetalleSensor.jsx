@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { FaArrowLeft } from 'react-icons/fa';  // Cambio de icono aquí
+import { FaArrowLeft } from 'react-icons/fa';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getSensorById } from '../../../api/SensorAPI';
 import jsPDF from 'jspdf';
@@ -19,24 +19,46 @@ const DetalleSensorConGraficas = () => {
   });
 
   if (isLoading) {
-    return <p>Cargando datos...</p>;
+    return <p className="text-center text-gray-500 py-4">Cargando datos...</p>;
   }
 
   if (error) {
-    return <p>Error al cargar datos: {error.message}</p>;
+    return <p className="text-center text-red-500 py-4">Error al cargar datos: {error.message}</p>;
   }
 
-  // Extraer las lecturas de las entidades del sensor
-  const lecturas = sensorData?.lecturaEntidades || [];
+  // Función para convertir fecha y hora a formato legible con espacio
+  const formatDateTime = (dateStr) => {
+    const date = new Date(dateStr);
+    const formattedDate = date.toLocaleDateString('es-ES');
+    const formattedTime = date.toLocaleTimeString('es-ES');
+    return `${formattedDate} ${formattedTime}`; // Usar espacio entre fecha y hora
+  };
 
-  // Preparar los datos para las gráficas
-  const data = lecturas.map(reading => ({
-    name: new Date(reading.registerDate).toLocaleDateString(),
+  // Extraer las lecturas de las entidades del sensor y preparar los datos
+  const data = (sensorData?.lecturaEntidades || []).map((reading) => ({
+    name: formatDateTime(reading.registerDate),
+    hour: new Date(reading.registerDate).toLocaleTimeString('es-ES'), // Hora sola para el Tooltip
     pH: reading.ph_parameter,
     turbidez: reading.turbidez_parameter,
     orp: reading.orp_parameter,
-    temperatura: reading.temperature || 25 // Si no existe temperatura, puedes ajustar o eliminar esto
+    temperatura: reading.temperature || 25, // Si no existe temperatura, puedes ajustar o eliminar esto
   }));
+
+  // Función para personalizar el Tooltip y mostrar la hora
+  const customTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="custom-tooltip bg-white p-4 shadow-lg rounded-lg border border-gray-200">
+          <p className="text-sm font-bold text-blue-600">{`Fecha: ${label.split(' ')[0]}`}</p>
+          <p className="text-xs text-gray-700">{`Hora: ${payload[0].payload.hour}`}</p>
+          <p className="text-xs text-gray-600">{`pH: ${payload[0].value}`}</p>
+          {payload.length > 1 && <p className="text-xs text-gray-600">{`ORP: ${payload[1].value}`}</p>}
+          {payload.length > 2 && <p className="text-xs text-gray-600">{`Turbidez: ${payload[2].value}`}</p>}
+        </div>
+      );
+    }
+    return null;
+  };
 
   // Función para descargar el reporte en PDF
   const downloadPDF = () => {
@@ -50,13 +72,13 @@ const DetalleSensorConGraficas = () => {
     // Generar la tabla automáticamente
     doc.autoTable({
       startY: 22,
-      head: [['Fecha', 'pH', 'Turbidez (NTU)', 'ORP (mV)', 'Temperatura']],
-      body: lecturas.map(reading => [
-        new Date(reading.registerDate).toLocaleDateString('es-ES'),
-        reading.ph_parameter,
-        reading.turbidez_parameter,
-        reading.orp_parameter,
-        reading.temperature || 25,
+      head: [['Fecha y Hora', 'pH', 'Turbidez (NTU)', 'ORP (mV)', 'Temperatura']],
+      body: data.map((reading) => [
+        reading.name,
+        reading.pH,
+        reading.turbidez,
+        reading.orp,
+        reading.temperatura,
       ]),
     });
 
@@ -65,12 +87,12 @@ const DetalleSensorConGraficas = () => {
 
   // Función para descargar el reporte en Excel
   const downloadExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(lecturas.map(reading => ({
-      Fecha: new Date(reading.registerDate).toLocaleDateString('es-ES'),
-      pH: reading.ph_parameter,
-      'Turbidez (NTU)': reading.turbidez_parameter,
-      'ORP (mV)': reading.orp_parameter,
-      Temperatura: reading.temperature || 25,
+    const worksheet = XLSX.utils.json_to_sheet(data.map((reading) => ({
+      'Fecha y Hora': reading.name,
+      pH: reading.pH,
+      'Turbidez (NTU)': reading.turbidez,
+      'ORP (mV)': reading.orp,
+      Temperatura: reading.temperatura,
     })));
 
     const workbook = XLSX.utils.book_new();
@@ -79,71 +101,71 @@ const DetalleSensorConGraficas = () => {
   };
 
   return (
-    <div className="p-5">
-      <h1 className="text-3xl font-bold mb-5">Lecturas del Sensor: {sensorData?.nombreSensor}</h1>
-      <div className="flex justify-between mb-4">
-        <button
-          onClick={() => navigate('/')}
-          className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center"
-        >
-          <FaArrowLeft className="mr-2" /> Volver a Sensores
-        </button>
-        <div className="flex space-x-2">
+    <div className="p-8 bg-gray-100 min-h-screen">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-4xl font-extrabold mb-8 text-center text-gray-800">Lecturas del Sensor: {sensorData?.nombreSensor}</h1>
+        <div className="flex justify-between items-center mb-6">
           <button
-            onClick={downloadPDF}
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            onClick={() => navigate('/')}
+            className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-md flex items-center transition-transform hover:scale-105"
           >
-            Descargar PDF
+            <FaArrowLeft className="mr-2" /> Volver a Sensores
           </button>
-          <button
-            onClick={downloadExcel}
-            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-          >
-            Descargar Excel
-          </button>
+          <div className="flex space-x-4">
+            <button
+              onClick={downloadPDF}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform hover:scale-105"
+            >
+              Descargar PDF
+            </button>
+            <button
+              onClick={downloadExcel}
+              className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform hover:scale-105"
+            >
+              Descargar Excel
+            </button>
+          </div>
         </div>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white p-4 shadow rounded">
-          <h2 className="text-xl font-semibold mb-3">Sensor de pH</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis domain={[6.8, 7.8]} />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="pH" stroke="#8884d8" />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="bg-white p-4 shadow rounded">
-          <h2 className="text-xl font-semibold mb-3">Sensor de Cloro Residual (ORP)</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="orp" stroke="#82ca9d" />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="bg-white p-4 shadow rounded col-span-2">
-          <h2 className="text-xl font-semibold mb-3 text-center">Sensor de Turbidez (NTU)</h2>
-          <ResponsiveContainer width="50%" height={300} className="mx-auto">
-            <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="turbidez" stroke="#ffc658" />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-2xl font-semibold mb-4 text-center text-blue-600">Sensor de pH</h2>
+            <ResponsiveContainer width="100%" height={350}>
+              <LineChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#ddd" />
+                <XAxis dataKey="name" tick={false} />
+                <YAxis domain={[6.5, 8.5]} tick={{ fontSize: 12 }} />
+                <Tooltip content={customTooltip} />
+                <Legend />
+                <Line type="monotone" dataKey="pH" stroke="#4a90e2" strokeWidth={3} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-2xl font-semibold mb-4 text-center text-blue-600">Sensor de Cloro Residual (ORP)</h2>
+            <ResponsiveContainer width="100%" height={350}>
+              <LineChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#ddd" />
+                <XAxis dataKey="name" tick={false} />
+                <YAxis domain={[100, 700]} tick={{ fontSize: 12 }} />
+                <Tooltip content={customTooltip} />
+                <Legend />
+                <Line type="monotone" dataKey="orp" stroke="#82ca9d" strokeWidth={3} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-md lg:col-span-2">
+            <h2 className="text-2xl font-semibold mb-4 text-center text-blue-600">Sensor de Turbidez (NTU)</h2>
+            <ResponsiveContainer width="100%" height={350}>
+              <LineChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#ddd" />
+                <XAxis dataKey="name" tick={false} />
+                <YAxis domain={[0, 1.5]} tick={{ fontSize: 12 }} />
+                <Tooltip content={customTooltip} />
+                <Legend />
+                <Line type="monotone" dataKey="turbidez" stroke="#ffc658" strokeWidth={3} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
     </div>

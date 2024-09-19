@@ -1,29 +1,29 @@
 import React, { useMemo } from 'react';
 import { useTable, useGlobalFilter } from 'react-table';
-import { FaExclamationTriangle } from 'react-icons/fa';  // Ícono para las alertas
+import { FaExclamationTriangle } from 'react-icons/fa';
 import { useQuery } from '@tanstack/react-query';
-import { getAlerts } from '../../../api/AlertaAPI';  // Ruta de tu API para obtener alertas
+import { getAlerts } from '../../../api/AlertaAPI';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 const PantallaAlertas = () => {
-  // Usar `useQuery` para obtener los datos de las alertas
+  // Obtener los datos de alertas usando `useQuery`
   const { data: alertas, isLoading, error } = useQuery({
     queryKey: ['alertas'],
-    queryFn: getAlerts,  // Usamos la función que me pasaste para obtener todas las alertas
+    queryFn: getAlerts,
   });
 
   // Función para aplicar color según el nivel de alerta
   const getIconColor = (level) => {
     switch (level.toLowerCase()) {
       case 'crítico':
-        return 'text-red-600'; // Rojo para "Crítico"
+        return 'text-red-600';
       case 'advertencia':
-        return 'text-yellow-500'; // Amarillo para "Advertencia"
+        return 'text-yellow-500';
       case 'alerta':
       default:
-        return 'text-orange-500'; // Naranja para "Alerta"
+        return 'text-orange-500';
     }
   };
 
@@ -31,14 +31,14 @@ const PantallaAlertas = () => {
   const columns = useMemo(() => [
     {
       Header: 'NO.',
-      accessor: 'id', // Campo adecuado para mostrar el ID o número de alerta
+      accessor: 'id',
       Cell: ({ row }) => (
-        <div className="flex items-center">
+        <div className="flex items-center justify-center">
           <FaExclamationTriangle className={`${getIconColor(row.original.level)} mr-2`} />
         </div>
       ),
     },
-    { Header: 'Nombre de Alerta', accessor: 'type' }, // Ajustar según el nombre de tu campo
+    { Header: 'Nombre de Alerta', accessor: 'type' },
     { Header: 'Id del sensor', accessor: 'sensorId', Cell: ({ value }) => <div className="text-center">{value}</div> },
     { Header: 'Fecha y Hora', accessor: 'registerDate', Cell: ({ value }) => new Date(value).toLocaleString('es-ES') },
     { Header: 'Nivel', accessor: 'level' },
@@ -61,19 +61,13 @@ const PantallaAlertas = () => {
   // Función para descargar el reporte en PDF
   const downloadPDF = () => {
     const doc = new jsPDF();
-
-    // Encabezado centrado con estilo
     doc.setFontSize(18);
     doc.text('Reporte de Alertas', doc.internal.pageSize.getWidth() / 2, 16, null, null, 'center');
-
-    // Espacio antes de la tabla
     doc.setFontSize(12);
     doc.text('Generado el ' + new Date().toLocaleString('es-ES'), 14, 25);
-
-    // Generar la tabla con un estilo mejorado
     doc.autoTable({
-      startY: 30, // Esto asegura que la tabla comience un poco más abajo del título
-      headStyles: { fillColor: [22, 160, 133] }, // Cambiar color del encabezado de la tabla
+      startY: 30,
+      headStyles: { fillColor: [22, 160, 133] },
       head: [['NO', 'Nombre de Alerta', 'Id del sensor', 'Fecha', 'Nivel', 'Descripción']],
       body: rows.map((row) => [
         row.index + 1,
@@ -83,9 +77,8 @@ const PantallaAlertas = () => {
         row.original.level,
         row.original.description,
       ]),
-      styles: { cellPadding: 3, fontSize: 10 }, // Ajustar el padding y tamaño de la fuente
+      styles: { cellPadding: 3, fontSize: 10 },
     });
-
     doc.save('reporte-alertas.pdf');
   };
 
@@ -94,12 +87,11 @@ const PantallaAlertas = () => {
     const worksheet = XLSX.utils.json_to_sheet(rows.map((row) => ({
       NO: row.index + 1,
       'Nombre de Alerta': row.original.type,
-      'Id del sensor': row.original.sensorId,
+      'Id del Sensor': row.original.sensorId,
       Fecha: new Date(row.original.registerDate).toLocaleString('es-ES'),
       Nivel: row.original.level,
       Descripción: row.original.description,
     })));
-
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'ReporteAlertas');
     XLSX.writeFile(workbook, 'reporte-alertas.xlsx');
@@ -107,45 +99,45 @@ const PantallaAlertas = () => {
 
   // Manejar errores y estado de carga
   if (isLoading) {
-    return <p>Cargando alertas...</p>;
+    return <p className="text-center py-4 text-gray-500">Cargando alertas...</p>;
   }
 
   if (error) {
-    return <p>Error al cargar las alertas: {error.message}</p>;
+    return <p className="text-red-500 font-bold text-center mt-4">Error al cargar las alertas: {error.message}</p>;
   }
 
   return (
-    <div className="p-5">
-      <h1 className="text-3xl font-bold mb-5">Pantalla de Alertas</h1>
-      <div className="flex justify-between mb-4">
+    <div className="p-8 bg-white-100 min-h-screen">
+      <h1 className="text-4xl font-bold mb-6 text-center text-gray-800">Pantalla de Alertas</h1>
+      <div className="flex justify-between items-center mb-4">
         <input
           value={globalFilter || ''}
           onChange={(e) => setGlobalFilter(e.target.value)}
           placeholder="Buscar alerta..."
-          className="p-2 border border-gray-300 rounded"
+          className="p-3 border border-gray-300 rounded-lg shadow-md focus:outline-none focus:ring focus:border-blue-300"
         />
         <div className="flex space-x-2">
           <button
             onClick={downloadPDF}
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transform transition-transform hover:scale-105"
           >
             Descargar PDF
           </button>
           <button
             onClick={downloadExcel}
-            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+            className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transform transition-transform hover:scale-105"
           >
             Descargar Excel
           </button>
         </div>
       </div>
-      <div className="overflow-x-auto">
-        <table {...getTableProps()} className="min-w-full bg-white border border-gray-200">
+      <div className="overflow-x-auto shadow-lg rounded-lg border border-gray-200">
+        <table {...getTableProps()} className="min-w-full bg-white rounded-lg">
           <thead>
             {headerGroups.map((headerGroup) => (
-              <tr {...headerGroup.getHeaderGroupProps()} key={headerGroup.id} className="bg-gray-800 text-white">
+              <tr {...headerGroup.getHeaderGroupProps()} key={headerGroup.id} className="bg-blue-500 text-white text-lg font-semibold">
                 {headerGroup.headers.map((column) => (
-                  <th {...column.getHeaderProps()} key={column.id} className="py-3 px-6 text-left">
+                  <th {...column.getHeaderProps()} key={column.id} className="py-4 px-6 text-center">
                     {column.render('Header')}
                   </th>
                 ))}
@@ -153,12 +145,16 @@ const PantallaAlertas = () => {
             ))}
           </thead>
           <tbody {...getTableBodyProps()}>
-            {rows.map((row) => {
+            {rows.map((row, index) => {
               prepareRow(row);
               return (
-                <tr {...row.getRowProps()} key={row.original.alertId || row.index} className="border-b">
+                <tr
+                  {...row.getRowProps()}
+                  key={row.original.alertId || row.index}
+                  className={`border-b ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-gray-100 transition-colors duration-200`}
+                >
                   {row.cells.map((cell) => (
-                    <td {...cell.getCellProps()} key={cell.column.id} className="py-3 px-6">
+                    <td {...cell.getCellProps()} key={cell.column.id} className="py-4 px-6 text-center">
                       {cell.render('Cell')}
                     </td>
                   ))}

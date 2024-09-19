@@ -1,31 +1,101 @@
 import React, { useMemo } from 'react';
 import { useTable, usePagination, useGlobalFilter } from 'react-table';
 import { useQuery } from '@tanstack/react-query';
-import { getReadings } from '../../../api/LecturaAPI'; // Asegúrate de usar el endpoint correcto para las lecturas
+import { getReadings } from '../../../api/LecturaAPI';
+import { FaCircle, FaExclamationCircle, FaCheckCircle } from 'react-icons/fa';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 const PantallaMonitoreo = () => {
+  // Función para convertir fecha UTC a la hora de Guatemala (UTC-6)
+  const convertToGuatemalaTime = (utcDateStr) => {
+    const utcDate = new Date(utcDateStr);
+
+    // Usar Intl.DateTimeFormat para la conversión correcta a la zona horaria de Guatemala
+    const options = {
+      timeZone: 'America/Guatemala',
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+      hour12: true,
+    };
+
+    return new Intl.DateTimeFormat('es-ES', options).format(utcDate);
+  };
+
   // Fetching readings data using useQuery
   const { data: readingsData, isLoading, error } = useQuery({
     queryKey: ['readings'],
-    queryFn: getReadings, // Obtener los datos desde la API
+    queryFn: getReadings,
   });
 
-  console.log(readingsData);
-  
   // Prevenir errores si no hay lecturas aún
   const data = readingsData || [];
 
+  // Función para obtener el ícono basado en el valor del parámetro
+  const getIconForValue = (parameter, type) => {
+    const thresholds = {
+      ph: { low: 6.8, high: 7.8 },
+      turbidez: { low: 0.1, high: 1.0 },
+      orp: { low: 200, high: 600 },
+    };
+
+    const threshold = thresholds[type];
+    if (!threshold) return null;
+
+    if (parameter < threshold.low) {
+      return <FaExclamationCircle className="text-yellow-500" />; // Amarillo: bajo
+    } else if (parameter > threshold.high) {
+      return <FaExclamationCircle className="text-red-500" />; // Rojo: alto
+    } else {
+      return <FaCheckCircle className="text-green-500" />; // Verde: normal
+    }
+  };
+
   // Definir las columnas de la tabla
   const columns = useMemo(() => [
-    { Header: 'NO.', accessor: 'readId', Cell: ({ value }) => <div className="text-center">{value}</div> }, 
-    { Header: 'Fecha y Hora', accessor: 'registerDate', Cell: ({ value }) => <div className="text-center">{new Date(value).toLocaleString('es-ES')}</div> },
+    { Header: 'NO.', accessor: 'readId', Cell: ({ value }) => <div className="text-center">{value}</div> },
+    {
+      Header: 'Fecha y Hora',
+      accessor: 'registerDate',
+      Cell: ({ value }) => (
+        <div className="text-center">
+          {convertToGuatemalaTime(value)}
+        </div>
+      )
+    },
     { Header: 'Id del sensor', accessor: 'sensorId', Cell: ({ value }) => <div className="text-center">{value}</div> },
-    { Header: 'Sensor de Turbidez (NTU)', accessor: 'turbidez_parameter', Cell: ({ value }) => <div className="text-center">{value}</div> },
-    { Header: 'Sensor de pH', accessor: 'ph_parameter', Cell: ({ value }) => <div className="text-center">{value}</div> },
-    { Header: 'Sensor de ORP (mV)', accessor: 'orp_parameter', Cell: ({ value }) => <div className="text-center">{value}</div> },
+    {
+      Header: 'Sensor de Turbidez (NTU)',
+      accessor: 'turbidez_parameter',
+      Cell: ({ value }) => (
+        <div className="text-center flex items-center justify-center space-x-2">
+          <span>{value}</span> {getIconForValue(value, 'turbidez')}
+        </div>
+      ),
+    },
+    {
+      Header: 'Sensor de pH',
+      accessor: 'ph_parameter',
+      Cell: ({ value }) => (
+        <div className="text-center flex items-center justify-center space-x-2">
+          <span>{value}</span> {getIconForValue(value, 'ph')}
+        </div>
+      ),
+    },
+    {
+      Header: 'Sensor de ORP (mV)',
+      accessor: 'orp_parameter',
+      Cell: ({ value }) => (
+        <div className="text-center flex items-center justify-center space-x-2">
+          <span>{value}</span> {getIconForValue(value, 'orp')}
+        </div>
+      ),
+    },
   ], []);
 
   const {
@@ -33,7 +103,7 @@ const PantallaMonitoreo = () => {
     getTableBodyProps,
     headerGroups,
     prepareRow,
-    page, // Instead of using rows, we'll use page for pagination
+    page,
     canPreviousPage,
     canNextPage,
     pageOptions,
@@ -47,7 +117,7 @@ const PantallaMonitoreo = () => {
   } = useTable(
     {
       columns,
-      data, // Usar los datos obtenidos de la API
+      data,
       initialState: { pageIndex: 0 },
     },
     useGlobalFilter,
@@ -60,18 +130,16 @@ const PantallaMonitoreo = () => {
   const downloadPDF = () => {
     const doc = new jsPDF();
 
-    // Encabezado
     doc.setFontSize(18);
     doc.text('Reporte de Lecturas', 14, 16);
     doc.setFontSize(12);
 
-    // Generar la tabla automáticamente
     doc.autoTable({
       startY: 22,
       head: [['NO', 'Fecha y Hora', 'Id del Sensor', 'Turbidez (NTU)', 'pH', 'ORP (mV)']],
       body: page.map((row) => [
         row.index + 1,
-        new Date(row.original.registerDate).toLocaleString('es-ES'),
+        convertToGuatemalaTime(row.original.registerDate),
         row.original.sensorId,
         row.original.turbidez_parameter,
         row.original.ph_parameter,
@@ -86,7 +154,7 @@ const PantallaMonitoreo = () => {
   const downloadExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(page.map((row) => ({
       NO: row.index + 1,
-      Fecha: new Date(row.original.registerDate).toLocaleString('es-ES'),
+      Fecha: convertToGuatemalaTime(row.original.registerDate),
       'Id del Sensor': row.original.sensorId,
       'Turbidez (NTU)': row.original.turbidez_parameter,
       'pH': row.original.ph_parameter,
@@ -107,37 +175,37 @@ const PantallaMonitoreo = () => {
   }
 
   return (
-    <div className="p-5">
-      <h1 className="text-4xl font-bold mb-6 ">Monitoreo de Lecturas</h1>
-      <div className="flex justify-between mb-4">
+    <div className="p-8 bg-white-100 min-h-screen">
+      <h1 className="text-4xl font-bold mb-6 text-center text-gray-800">Monitoreo de Lecturas</h1>
+      <div className="flex justify-between items-center mb-4">
         <input
           value={globalFilter || ''}
           onChange={(e) => setGlobalFilter(e.target.value)}
           placeholder="Buscar..."
-          className="p-2 border border-gray-300 rounded"
+          className="p-3 border border-gray-300 rounded-lg shadow-md focus:outline-none focus:ring focus:border-blue-300"
         />
         <div className="flex space-x-2">
           <button
             onClick={downloadPDF}
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transform transition-transform hover:scale-105"
           >
             Descargar PDF
           </button>
           <button
             onClick={downloadExcel}
-            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+            className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transform transition-transform hover:scale-105"
           >
             Descargar Excel
           </button>
         </div>
       </div>
-      <div className="overflow-x-auto">
-        <table {...getTableProps()} className="min-w-full bg-white border border-gray-200">
+      <div className="overflow-x-auto shadow-lg rounded-lg border border-gray-200">
+        <table {...getTableProps()} className="min-w-full bg-white rounded-lg">
           <thead>
             {headerGroups.map((headerGroup) => (
-              <tr {...headerGroup.getHeaderGroupProps()} key={headerGroup.id} className="bg-gray-800 text-white">
+              <tr {...headerGroup.getHeaderGroupProps()} key={headerGroup.id} className="bg-blue-500 text-white text-lg font-semibold">
                 {headerGroup.headers.map((column) => (
-                  <th {...column.getHeaderProps()} key={column.id} className="py-3 px-6 text-center">
+                  <th {...column.getHeaderProps()} key={column.id} className="py-4 px-6 text-center">
                     {column.render('Header')}
                   </th>
                 ))}
@@ -145,12 +213,18 @@ const PantallaMonitoreo = () => {
             ))}
           </thead>
           <tbody {...getTableBodyProps()}>
-            {page.map((row) => {
+            {page.map((row, index) => {
               prepareRow(row);
               return (
-                <tr {...row.getRowProps()} key={row.original.readId || row.index} className="border-b">
+                <tr
+                  {...row.getRowProps()}
+                  key={row.original.readId || row.index}
+                  className={`border-b ${
+                    index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
+                  } hover:bg-gray-100 transition-colors duration-200`}
+                >
                   {row.cells.map((cell) => (
-                    <td {...cell.getCellProps()} key={cell.column.id} className="py-3 px-6 text-center">
+                    <td {...cell.getCellProps()} key={cell.column.id} className="py-4 px-6 text-center">
                       {cell.render('Cell')}
                     </td>
                   ))}
@@ -160,33 +234,41 @@ const PantallaMonitoreo = () => {
           </tbody>
         </table>
       </div>
-      <div className="mt-4 flex justify-between items-center">
+      <div className="mt-8 flex justify-between items-center">
         <div className="flex space-x-2">
           <button
             onClick={() => gotoPage(0)}
             disabled={!canPreviousPage}
-            className={`px-3 py-2 text-sm font-semibold text-white rounded ${canPreviousPage ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'}`}
+            className={`px-3 py-2 text-sm font-semibold text-white rounded-lg shadow-md ${
+              canPreviousPage ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
+            }`}
           >
             {'<<'}
           </button>
           <button
             onClick={() => previousPage()}
             disabled={!canPreviousPage}
-            className={`px-3 py-2 text-sm font-semibold text-white rounded ${canPreviousPage ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'}`}
+            className={`px-3 py-2 text-sm font-semibold text-white rounded-lg shadow-md ${
+              canPreviousPage ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
+            }`}
           >
             {'<'}
           </button>
           <button
             onClick={() => nextPage()}
             disabled={!canNextPage}
-            className={`px-3 py-2 text-sm font-semibold text-white rounded ${canNextPage ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'}`}
+            className={`px-3 py-2 text-sm font-semibold text-white rounded-lg shadow-md ${
+              canNextPage ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
+            }`}
           >
             {'>'}
           </button>
           <button
             onClick={() => gotoPage(pageCount - 1)}
             disabled={!canNextPage}
-            className={`px-3 py-2 text-sm font-semibold text-white rounded ${canNextPage ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'}`}
+            className={`px-3 py-2 text-sm font-semibold text-white rounded-lg shadow-md ${
+              canNextPage ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
+            }`}
           >
             {'>>'}
           </button>
@@ -201,11 +283,11 @@ const PantallaMonitoreo = () => {
           <select
             value={pageSize}
             onChange={(e) => setPageSize(Number(e.target.value))}
-            className="px-2 py-1 border border-gray-300 rounded"
+            className="px-3 py-2 border border-gray-300 rounded-lg shadow-md focus:outline-none focus:ring focus:border-blue-300"
           >
-            {[10, 20, 30, 40, 50].map(pageSize => (
-              <option key={pageSize} value={pageSize}>
-                Mostrar {pageSize}
+            {[10, 20, 30, 40, 50].map((size) => (
+              <option key={size} value={size}>
+                Mostrar {size}
               </option>
             ))}
           </select>

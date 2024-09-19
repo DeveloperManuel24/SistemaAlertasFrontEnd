@@ -55,22 +55,22 @@ const ManejoDeSensor = () => {
       Header: 'Acciones',
       accessor: 'actions',
       Cell: ({ row }) => (
-        <div className="flex space-x-2">
+        <div className="flex space-x-2 justify-center">
           <button
             onClick={() => navigate(`/sensores/view/${row.original.sensorId}`)}
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center"
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center shadow-md transition-all transform hover:scale-105"
           >
             <FaEye className="mr-1" /> Ver Lecturas
           </button>
           <button
             onClick={() => navigate(`/sensores/edit/${row.original.sensorId}`)}
-            className="bg-orange-500 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded flex items-center"
+            className="bg-orange-500 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg flex items-center shadow-md transition-all transform hover:scale-105"
           >
             <FaEdit className="mr-1" /> Editar
           </button>
           <button
             onClick={() => handleDelete(row.original.sensorId)}
-            className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded flex items-center"
+            className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg flex items-center shadow-md transition-all transform hover:scale-105"
           >
             <FaTrash className="mr-1" /> Eliminar
           </button>
@@ -97,32 +97,32 @@ const ManejoDeSensor = () => {
   }
 
   return (
-    <div className="p-5">
-      <h1 className="text-3xl font-bold mb-5">Gestión de Sensores</h1>
-      <div className="flex justify-between mb-4">
+    <div className="p-8 bg-white-100 min-h-screen">
+      <h1 className="text-4xl font-bold mb-6 text-center text-gray-800">Gestión de Sensores</h1>
+      <div className="flex justify-between items-center mb-4">
         <input
           value={globalFilter || ''}
           onChange={(e) => setGlobalFilter(e.target.value)}
           placeholder="Buscar sensor..."
-          className="p-2 border border-gray-300 rounded"
+          className="p-3 border border-gray-300 rounded-lg shadow-md focus:outline-none focus:ring focus:border-blue-300"
         />
         <button
           onClick={() => navigate('/sensores/create')}
-          className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center"
+          className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-5 rounded-lg shadow-md flex items-center transition-transform hover:scale-105"
         >
           <FaPlus className="mr-2" /> Crear Sensor
         </button>
       </div>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto shadow-lg rounded-lg border border-gray-200">
         {isLoading ? (
-          <p>Cargando sensores...</p>
+          <p className="text-center py-10">Cargando sensores...</p>
         ) : sensors && sensors.length > 0 ? (
-          <table {...getTableProps()} className="min-w-full bg-white border border-gray-200">
+          <table {...getTableProps()} className="min-w-full bg-white rounded-lg">
             <thead>
               {headerGroups.map((headerGroup) => (
-                <tr {...headerGroup.getHeaderGroupProps()} key={headerGroup.id} className="bg-gray-800 text-white">
+                <tr {...headerGroup.getHeaderGroupProps()} key={headerGroup.id} className="bg-blue-500 text-white text-lg font-semibold">
                   {headerGroup.headers.map((column) => (
-                    <th {...column.getHeaderProps()} key={column.id} className="py-3 px-6 text-left">
+                    <th {...column.getHeaderProps()} key={column.id} className="py-4 px-6 text-center">
                       {column.render('Header')}
                     </th>
                   ))}
@@ -133,9 +133,13 @@ const ManejoDeSensor = () => {
               {rows.map((row) => {
                 prepareRow(row);
                 return (
-                  <tr {...row.getRowProps()} key={row.original.sensorId} className="border-b">
+                  <tr
+                    {...row.getRowProps()}
+                    key={row.original.sensorId}
+                    className={`border-b ${row.index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-gray-100 transition-colors duration-200`}
+                  >
                     {row.cells.map((cell) => (
-                      <td {...cell.getCellProps()} key={cell.column.id} className="py-3 px-6">
+                      <td {...cell.getCellProps()} key={cell.column.id} className="py-4 px-6 text-center">
                         {cell.render('Cell')}
                       </td>
                     ))}
