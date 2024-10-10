@@ -18,10 +18,8 @@ const FormularioSensor = () => {
   const { data: sensorData, isLoading: isLoadingSensor } = useQuery({
     queryKey: ['sensor', id],
     queryFn: () => getSensorById(id),
-    enabled: !!id, // Solo ejecuta la consulta si hay un ID presente
+    enabled: !!id,
     onSuccess: (data) => {
-      // Verifica si los datos vienen correctamente y se asignan a formData
-      console.log("Datos del sensor:", data);
       setFormData({
         nombreSensor: data.nombreSensor || '',
         location: data.location || '',
@@ -37,8 +35,8 @@ const FormularioSensor = () => {
   const createMutation = useMutation({
     mutationFn: createSensor,
     onSuccess: () => {
-      queryClient.invalidateQueries(['sensors']); // Refrescar los datos de sensores
-      navigate('/sensores'); // Redirigir al listado de sensores
+      queryClient.invalidateQueries(['sensors']);
+      navigate('/sensores');
     },
     onError: (error) => {
       console.error('Error al crear el sensor:', error.message);
@@ -49,8 +47,8 @@ const FormularioSensor = () => {
   const updateMutation = useMutation({
     mutationFn: (updatedData) => updateSensor(id, updatedData),
     onSuccess: () => {
-      queryClient.invalidateQueries(['sensors']); // Refrescar los datos de sensores
-      navigate('/sensores'); // Redirigir al listado de sensores
+      queryClient.invalidateQueries(['sensors']);
+      navigate('/sensores');
     },
     onError: (error) => {
       console.error('Error al actualizar el sensor:', error.message);
@@ -65,9 +63,9 @@ const FormularioSensor = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (id) {
-      updateMutation.mutate(formData); // Actualizar sensor
+      updateMutation.mutate(formData);
     } else {
-      createMutation.mutate(formData); // Crear sensor
+      createMutation.mutate(formData);
     }
   };
 
@@ -82,66 +80,77 @@ const FormularioSensor = () => {
   }, [sensorData]);
 
   if (isLoadingSensor) {
-    return <p>Cargando datos del sensor...</p>;
+    return <p className="text-center py-6">Cargando datos del sensor...</p>;
   }
 
   return (
-    <>
-    <form onSubmit={handleSubmit} className="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-4">{id ? 'Editar Sensor' : 'Crear Sensor'}</h2>
-      <div className="mb-4">
-        <label className="block text-gray-700">Nombre del Sensor</label>
-        <input
-          type="text"
-          name="nombreSensor"
-          value={formData.nombreSensor}
-          onChange={handleChange}
-          className="w-full p-2 border border-gray-300 rounded"
-          required
-        />
-      </div>
-      <div className="mb-4">
-        <label className="block text-gray-700">Localidad</label>
-        <input
-          type="text"
-          name="location"
-          value={formData.location}
-          onChange={handleChange}
-          className="w-full p-2 border border-gray-300 rounded"
-          required
-        />
-      </div>
-      <div className="mb-4">
-        <label className="block text-gray-700">Estatus</label>
-        <select
-          name="status"
-          value={formData.status}
-          onChange={handleChange}
-          className="w-full p-2 border border-gray-300 rounded"
-          required
-        >
-          <option value="">Selecciona un estatus</option>
-          <option value="Activo">Activo</option>
-          <option value="Inactivo">Inactivo</option>
-        </select>
-      </div>
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        >
-          {id ? 'Actualizar' : 'Crear'}
-        </button>
-      </div>
-    </form>
-        
-    <button
+    <div className="min-h-screen flex flex-col justify-center items-center bg-gray-100 py-10">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-lg bg-white p-8 rounded-lg shadow-lg"
+      >
+        <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">
+          {id ? 'Editar Sensor' : 'Crear Sensor'}
+        </h2>
+        <div className="mb-6">
+          <label className="block text-gray-700 text-lg font-semibold mb-2">
+            Nombre del Sensor
+          </label>
+          <input
+            type="text"
+            name="nombreSensor"
+            value={formData.nombreSensor}
+            onChange={handleChange}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+        <div className="mb-6">
+          <label className="block text-gray-700 text-lg font-semibold mb-2">
+            Localidad
+          </label>
+          <input
+            type="text"
+            name="location"
+            value={formData.location}
+            onChange={handleChange}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+        <div className="mb-6">
+          <label className="block text-gray-700 text-lg font-semibold mb-2">
+            Estatus
+          </label>
+          <select
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          >
+            <option value="">Selecciona un estatus</option>
+            <option value="Activo">Activo</option>
+            <option value="Inactivo">Inactivo</option>
+          </select>
+        </div>
+        <div className="flex justify-center mt-6">
+          <button
+            type="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300"
+          >
+            {id ? 'Actualizar' : 'Crear'}
+          </button>
+        </div>
+      </form>
+
+      <button
         onClick={() => navigate('/sensores')}
-        className="bg-blue-500 hover:bg-blue-700 mt-8 text-white font-bold py-2 px-4 rounded mx-auto block"
+        className="mt-10 bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition duration-300"
       >
         Volver a la lista de Sensores
       </button>
-    </>
+    </div>
   );
 };
 

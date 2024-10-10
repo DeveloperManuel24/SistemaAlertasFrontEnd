@@ -39,18 +39,18 @@ const PantallaMonitoreo = () => {
   // Función para obtener el ícono basado en el valor del parámetro
   const getIconForValue = (parameter, type) => {
     const thresholds = {
-      ph: { low: 6.8, high: 7.8 },
-      turbidez: { low: 0.1, high: 1.0 },
-      orp: { low: 200, high: 600 },
+      ph: { low: 6.6, high: 8.4, min: 6.5, max: 8.5 },
+      turbidez: { low: 255, high: 308, min: 0, max: 309 },
+      orp: { low: 199, high: 599, min: 200, max: 600 },
     };
 
     const threshold = thresholds[type];
     if (!threshold) return null;
 
-    if (parameter < threshold.low) {
-      return <FaExclamationCircle className="text-yellow-500" />; // Amarillo: bajo
-    } else if (parameter > threshold.high) {
-      return <FaExclamationCircle className="text-red-500" />; // Rojo: alto
+    if (parameter <= threshold.min) {
+      return <FaExclamationCircle className="text-red-500" />; // Rojo: bajo
+    } else if (parameter >= threshold.max) {
+      return <FaExclamationCircle className="text-yellow-500" />; // Amarillo: alto
     } else {
       return <FaCheckCircle className="text-green-500" />; // Verde: normal
     }
@@ -197,6 +197,20 @@ const PantallaMonitoreo = () => {
           >
             Descargar Excel
           </button>
+        </div>
+      </div>
+      <div className="mb-6 flex justify-center items-center space-x-6">
+        <div className="flex items-center space-x-2">
+          <FaCheckCircle className="text-green-500" />
+          <span className="font-semibold">Nivel Normal</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <FaExclamationCircle className="text-yellow-500" />
+          <span className="font-semibold">Nivel Alto</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <FaExclamationCircle className="text-red-500" />
+          <span className="font-semibold">Nivel Bajo</span>
         </div>
       </div>
       <div className="overflow-x-auto shadow-lg rounded-lg border border-gray-200">
