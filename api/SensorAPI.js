@@ -5,6 +5,8 @@ import { isAxiosError } from "axios";
 export async function createSensor(formData) {
     try {
         const token = localStorage.getItem('AUTH_TOKEN');
+        if (!token) throw new Error("No se encontró el token de autenticación");
+
         const { data } = await api.post('/api/sensores', formData, {
             headers: {
                 Authorization: `Bearer ${token}`,
@@ -12,11 +14,7 @@ export async function createSensor(formData) {
         });
         return data;
     } catch (error) {
-        if (isAxiosError(error) && error.response) {
-            throw new Error(error.response.data.error);
-        } else {
-            throw new Error("Error desconocido durante la creación del sensor");
-        }
+        return manejarError(error, "Error desconocido durante la creación del sensor");
     }
 }
 
@@ -24,6 +22,8 @@ export async function createSensor(formData) {
 export async function getSensors() {
     try {
         const token = localStorage.getItem('AUTH_TOKEN');
+        if (!token) throw new Error("No se encontró el token de autenticación");
+
         const { data } = await api.get('/api/sensores', {
             headers: {
                 Authorization: `Bearer ${token}`,
@@ -31,11 +31,7 @@ export async function getSensors() {
         });
         return data;
     } catch (error) {
-        if (isAxiosError(error) && error.response) {
-            throw new Error(error.response.data.error);
-        } else {
-            throw new Error("Error desconocido durante la obtención de sensores");
-        }
+        return manejarError(error, "Error desconocido durante la obtención de sensores");
     }
 }
 
@@ -43,6 +39,8 @@ export async function getSensors() {
 export async function getSensorById(id) {
     try {
         const token = localStorage.getItem('AUTH_TOKEN');
+        if (!token) throw new Error("No se encontró el token de autenticación");
+
         const { data } = await api.get(`/api/sensores/${id}`, {
             headers: {
                 Authorization: `Bearer ${token}`,
@@ -50,11 +48,7 @@ export async function getSensorById(id) {
         });
         return data;
     } catch (error) {
-        if (isAxiosError(error) && error.response) {
-            throw new Error(error.response.data.error);
-        } else {
-            throw new Error("Error desconocido durante la obtención del sensor");
-        }
+        return manejarError(error, "Error desconocido durante la obtención del sensor");
     }
 }
 
@@ -62,6 +56,8 @@ export async function getSensorById(id) {
 export async function updateSensor(id, formData) {
     try {
         const token = localStorage.getItem('AUTH_TOKEN');
+        if (!token) throw new Error("No se encontró el token de autenticación");
+
         const { data } = await api.put(`/api/sensores/${id}`, formData, {
             headers: {
                 Authorization: `Bearer ${token}`,
@@ -69,11 +65,7 @@ export async function updateSensor(id, formData) {
         });
         return data;
     } catch (error) {
-        if (isAxiosError(error) && error.response) {
-            throw new Error(error.response.data.error);
-        } else {
-            throw new Error("Error desconocido durante la actualización del sensor");
-        }
+        return manejarError(error, "Error desconocido durante la actualización del sensor");
     }
 }
 
@@ -81,16 +73,25 @@ export async function updateSensor(id, formData) {
 export async function deleteSensor(id) {
     try {
         const token = localStorage.getItem('AUTH_TOKEN');
+        if (!token) throw new Error("No se encontró el token de autenticación");
+
         await api.delete(`/api/sensores/${id}`, {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
         });
     } catch (error) {
-        if (isAxiosError(error) && error.response) {
-            throw new Error(error.response.data.error);
-        } else {
-            throw new Error("Error desconocido durante la eliminación del sensor");
-        }
+        return manejarError(error, "Error desconocido durante la eliminación del sensor");
+    }
+}
+
+// Función para manejar los errores de Axios
+function manejarError(error, mensajePorDefecto) {
+    if (isAxiosError(error) && error.response) {
+        console.error('Error Axios:', error.response.data);
+        throw new Error(error.response.data.error || mensajePorDefecto);
+    } else {
+        console.error('Error desconocido:', error);
+        throw new Error(mensajePorDefecto);
     }
 }
