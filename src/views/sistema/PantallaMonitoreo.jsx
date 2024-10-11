@@ -8,11 +8,8 @@ import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 const PantallaMonitoreo = () => {
-  // Función para convertir fecha UTC a la hora de Guatemala (UTC-6)
   const convertToGuatemalaTime = (utcDateStr) => {
     const utcDate = new Date(utcDateStr);
-
-    // Usar Intl.DateTimeFormat para la conversión correcta a la zona horaria de Guatemala
     const options = {
       timeZone: 'America/Guatemala',
       year: 'numeric',
@@ -23,20 +20,16 @@ const PantallaMonitoreo = () => {
       second: 'numeric',
       hour12: true,
     };
-
     return new Intl.DateTimeFormat('es-ES', options).format(utcDate);
   };
 
-  // Fetching readings data using useQuery
   const { data: readingsData, isLoading, error } = useQuery({
     queryKey: ['readings'],
     queryFn: getReadings,
   });
 
-  // Prevenir errores si no hay lecturas aún
   const data = readingsData || [];
 
-  // Función para obtener el ícono basado en el valor del parámetro
   const getIconForValue = (parameter, type) => {
     const thresholds = {
       ph: { low: 6.6, high: 8.4, min: 6.5, max: 8.5 },
@@ -48,15 +41,14 @@ const PantallaMonitoreo = () => {
     if (!threshold) return null;
 
     if (parameter <= threshold.min) {
-      return <FaExclamationCircle className="text-red-500" />; // Rojo: bajo
+      return <FaExclamationCircle className="text-red-500" />;
     } else if (parameter >= threshold.max) {
-      return <FaExclamationCircle className="text-yellow-500" />; // Amarillo: alto
+      return <FaExclamationCircle className="text-yellow-500" />;
     } else {
-      return <FaCheckCircle className="text-green-500" />; // Verde: normal
+      return <FaCheckCircle className="text-green-500" />;
     }
   };
 
-  // Definir las columnas de la tabla
   const columns = useMemo(() => [
     { Header: 'NO.', accessor: 'readId', Cell: ({ value }) => <div className="text-center">{value}</div> },
     {
@@ -126,10 +118,8 @@ const PantallaMonitoreo = () => {
 
   const { pageIndex, pageSize, globalFilter } = state;
 
-  // Función para descargar el reporte en PDF
   const downloadPDF = () => {
     const doc = new jsPDF();
-
     doc.setFontSize(18);
     doc.text('Reporte de Lecturas', 14, 16);
     doc.setFontSize(12);
@@ -150,7 +140,6 @@ const PantallaMonitoreo = () => {
     doc.save('reporte-lecturas.pdf');
   };
 
-  // Función para descargar el reporte en Excel
   const downloadExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(page.map((row) => ({
       NO: row.index + 1,
@@ -175,14 +164,14 @@ const PantallaMonitoreo = () => {
   }
 
   return (
-    <div className="p-8 bg-white-100 min-h-screen">
-      <h1 className="text-4xl font-bold mb-6 text-center text-gray-800">Monitoreo de Lecturas</h1>
-      <div className="flex justify-between items-center mb-4">
+    <div className="p-4 bg-white min-h-screen sm:p-6 md:p-8">
+      <h1 className="text-2xl font-bold mb-4 text-center text-gray-800 sm:text-3xl">Monitoreo de Lecturas</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
         <input
           value={globalFilter || ''}
           onChange={(e) => setGlobalFilter(e.target.value)}
           placeholder="Buscar..."
-          className="p-3 border border-gray-300 rounded-lg shadow-md focus:outline-none focus:ring focus:border-blue-300"
+          className="p-3 border border-gray-300 rounded-lg shadow-md focus:outline-none focus:ring focus:border-blue-300 w-full sm:max-w-xs mb-4 sm:mb-0"
         />
         <div className="flex space-x-2">
           <button
@@ -199,12 +188,12 @@ const PantallaMonitoreo = () => {
           </button>
         </div>
       </div>
-      <div className="mb-6 flex justify-center items-center space-x-6">
-        <div className="flex items-center space-x-2">
+      <div className="mb-6 flex flex-col sm:flex-row justify-center items-center space-x-6">
+        <div className="flex items-center space-x-2 mb-4 sm:mb-0">
           <FaCheckCircle className="text-green-500" />
           <span className="font-semibold">Nivel Normal</span>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 mb-4 sm:mb-0">
           <FaExclamationCircle className="text-yellow-500" />
           <span className="font-semibold">Nivel Alto</span>
         </div>
@@ -219,7 +208,7 @@ const PantallaMonitoreo = () => {
             {headerGroups.map((headerGroup) => (
               <tr {...headerGroup.getHeaderGroupProps()} key={headerGroup.id} className="bg-blue-500 text-white text-lg font-semibold">
                 {headerGroup.headers.map((column) => (
-                  <th {...column.getHeaderProps()} key={column.id} className="py-4 px-6 text-center">
+                  <th {...column.getHeaderProps()} key={column.id} className="py-2 px-4 text-center">
                     {column.render('Header')}
                   </th>
                 ))}
@@ -233,12 +222,10 @@ const PantallaMonitoreo = () => {
                 <tr
                   {...row.getRowProps()}
                   key={row.original.readId || row.index}
-                  className={`border-b ${
-                    index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
-                  } hover:bg-gray-100 transition-colors duration-200`}
+                  className={`border-b ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-gray-100 transition-colors duration-200`}
                 >
                   {row.cells.map((cell) => (
-                    <td {...cell.getCellProps()} key={cell.column.id} className="py-4 px-6 text-center">
+                    <td {...cell.getCellProps()} key={cell.column.id} className="py-2 px-4 text-center">
                       {cell.render('Cell')}
                     </td>
                   ))}
@@ -248,41 +235,33 @@ const PantallaMonitoreo = () => {
           </tbody>
         </table>
       </div>
-      <div className="mt-8 flex justify-between items-center">
-        <div className="flex space-x-2">
+      <div className="mt-6 flex flex-col sm:flex-row justify-between items-center">
+        <div className="flex space-x-2 mb-4 sm:mb-0">
           <button
             onClick={() => gotoPage(0)}
             disabled={!canPreviousPage}
-            className={`px-3 py-2 text-sm font-semibold text-white rounded-lg shadow-md ${
-              canPreviousPage ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
-            }`}
+            className={`px-3 py-2 text-sm font-semibold text-white rounded-lg shadow-md ${canPreviousPage ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'}`}
           >
             {'<<'}
           </button>
           <button
             onClick={() => previousPage()}
             disabled={!canPreviousPage}
-            className={`px-3 py-2 text-sm font-semibold text-white rounded-lg shadow-md ${
-              canPreviousPage ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
-            }`}
+            className={`px-3 py-2 text-sm font-semibold text-white rounded-lg shadow-md ${canPreviousPage ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'}`}
           >
             {'<'}
           </button>
           <button
             onClick={() => nextPage()}
             disabled={!canNextPage}
-            className={`px-3 py-2 text-sm font-semibold text-white rounded-lg shadow-md ${
-              canNextPage ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
-            }`}
+            className={`px-3 py-2 text-sm font-semibold text-white rounded-lg shadow-md ${canNextPage ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'}`}
           >
             {'>'}
           </button>
           <button
             onClick={() => gotoPage(pageCount - 1)}
             disabled={!canNextPage}
-            className={`px-3 py-2 text-sm font-semibold text-white rounded-lg shadow-md ${
-              canNextPage ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
-            }`}
+            className={`px-3 py-2 text-sm font-semibold text-white rounded-lg shadow-md ${canNextPage ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'}`}
           >
             {'>>'}
           </button>
