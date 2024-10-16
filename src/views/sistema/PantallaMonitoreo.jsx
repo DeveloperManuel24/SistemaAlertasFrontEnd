@@ -36,13 +36,15 @@ const PantallaMonitoreo = () => {
       turbidez: { low: 0.1, high: 1.0 }, // Nuevos valores
       orp: { low: 200, high: 600 }, // Nuevos valores
     };
-
+  
     const threshold = thresholds[type];
     if (!threshold) return null;
-
-    if (parameter < threshold.low) {
+  
+    const paramValue = parseFloat(parameter); // Asegura que el valor sea numérico
+  
+    if (paramValue < threshold.low) {
       return <FaExclamationCircle className="text-red-500" />; // Bajo el mínimo, rojo
-    } else if (parameter > threshold.high) {
+    } else if (paramValue > threshold.high) {
       return <FaExclamationCircle className="text-yellow-500" />; // Sobre el máximo, amarillo
     } else {
       return <FaCheckCircle className="text-green-500" />; // Dentro del rango, verde
