@@ -32,20 +32,20 @@ const PantallaMonitoreo = () => {
 
   const getIconForValue = (parameter, type) => {
     const thresholds = {
-      ph: { low: 6.6, high: 8.4, min: 6.5, max: 8.5 },
-      turbidez: { low: 255, high: 308, min: 0, max: 309 },
-      orp: { low: 199, high: 599, min: 200, max: 600 },
+      ph: { low: 6.5, high: 8.5 }, // Nuevos valores
+      turbidez: { low: 0.1, high: 1.0 }, // Nuevos valores
+      orp: { low: 200, high: 600 }, // Nuevos valores
     };
 
     const threshold = thresholds[type];
     if (!threshold) return null;
 
-    if (parameter <= threshold.min) {
-      return <FaExclamationCircle className="text-red-500" />;
-    } else if (parameter >= threshold.max) {
-      return <FaExclamationCircle className="text-yellow-500" />;
+    if (parameter < threshold.low) {
+      return <FaExclamationCircle className="text-red-500" />; // Bajo el mínimo, rojo
+    } else if (parameter > threshold.high) {
+      return <FaExclamationCircle className="text-yellow-500" />; // Sobre el máximo, amarillo
     } else {
-      return <FaCheckCircle className="text-green-500" />;
+      return <FaCheckCircle className="text-green-500" />; // Dentro del rango, verde
     }
   };
 
