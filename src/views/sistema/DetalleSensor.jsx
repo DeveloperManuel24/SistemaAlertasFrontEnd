@@ -72,13 +72,13 @@ const DetalleSensorConGraficas = () => {
     // Generar la tabla automáticamente
     doc.autoTable({
       startY: 22,
-      head: [['Fecha y Hora', 'pH', 'Turbidez (NTU)', 'ORP (mV)', 'Temperatura']],
+      head: [['Fecha y Hora', 'pH', 'Turbidez (NTU)', 'ORP (mV)']],
       body: data.map((reading) => [
         reading.name,
         reading.pH,
         reading.turbidez,
         reading.orp,
-        reading.temperatura,
+       
       ]),
     });
 
